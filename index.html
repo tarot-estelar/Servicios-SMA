@@ -38,6 +38,15 @@
             border: 1px solid #ccc;
             border-radius: 8px;
         }
+        .servicio {
+            display: flex;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .servicio input {
+            width: auto;
+            margin-right: 10px;
+        }
         button {
             background-color: #2d8659;
             color: white;
@@ -63,13 +72,23 @@
         <label for="fecha">Fecha</label>
         <input type="date" id="fecha" required>
 
-        <label for="servicio">Servicio</label>
-        <select id="servicio" required>
-            <option value="">Selecciona un servicio</option>
-            <option value="Cuidado de plantas">Cuidado de plantas</option>
-            <option value="Cuidado de animales">Cuidado de animales</option>
-            <option value="Limpieza del hogar">Limpieza del hogar</option>
-        </select>
+        <label>Selecciona los servicios</label>
+        <div class="servicio">
+            <input type="checkbox" name="servicio" value="Cuidado de plantas - $2000">
+            Cuidado de plantas - $2000
+        </div>
+        <div class="servicio">
+            <input type="checkbox" name="servicio" value="Cuidado de animales - $3500">
+            Cuidado de animales - $3500
+        </div>
+        <div class="servicio">
+            <input type="checkbox" name="servicio" value="Limpieza del hogar - $5000">
+            Limpieza del hogar - $5000
+        </div>
+        <div class="servicio">
+            <input type="checkbox" name="servicio" value="Chequeo de seguridad - $1500">
+            Chequeo de seguridad - $1500
+        </div>
 
         <button type="submit">Reservar por WhatsApp</button>
     </form>
@@ -85,7 +104,7 @@
 
     const fechaInput = document.getElementById('fecha');
 
-    // Bloquear fechas pasadas y ocupadas
+    // Bloquear fechas pasadas
     const hoy = new Date().toISOString().split('T')[0];
     fechaInput.setAttribute('min', hoy);
 
@@ -99,13 +118,20 @@
     document.getElementById('reservaForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const telefono = "549XXXXXXXXXX"; // Tu número de WhatsApp
+        const telefono = "549XXXXXXXXXX"; // Cambia por tu número real con código de país
 
         const nombre = document.getElementById('nombre').value;
         const fecha = document.getElementById('fecha').value;
-        const servicio = document.getElementById('servicio').value;
+        const serviciosSeleccionados = Array.from(
+            document.querySelectorAll('input[name="servicio"]:checked')
+        ).map(el => el.value).join(', ');
 
-        const mensaje = `Hola, soy ${nombre}. Quiero reservar el servicio de "${servicio}" para el día ${fecha}.`;
+        if (!serviciosSeleccionados) {
+            alert("Por favor selecciona al menos un servicio.");
+            return;
+        }
+
+        const mensaje = `Hola, soy ${nombre}. Quiero reservar para el día ${fecha} los siguientes servicios: ${serviciosSeleccionados}.`;
         const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
 
         window.open(url, '_blank');
