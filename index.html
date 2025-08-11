@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servicios SMA - Reserva</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f8f6;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #2d8659;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+        main {
+            max-width: 500px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        button {
+            background-color: #2d8659;
+            color: white;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #256f48;
+        }
+    </style>
+</head>
+<body>
+
+<header>Servicios SMA - Reserva tu día</header>
+
+<main>
+    <form id="reservaForm">
+        <label for="nombre">Tu nombre</label>
+        <input type="text" id="nombre" required>
+
+        <label for="fecha">Fecha</label>
+        <input type="date" id="fecha" required>
+
+        <label for="servicio">Servicio</label>
+        <select id="servicio" required>
+            <option value="">Selecciona un servicio</option>
+            <option value="Cuidado de plantas">Cuidado de plantas</option>
+            <option value="Cuidado de animales">Cuidado de animales</option>
+            <option value="Limpieza del hogar">Limpieza del hogar</option>
+        </select>
+
+        <button type="submit">Reservar por WhatsApp</button>
+    </form>
+</main>
+
+<script>
+    // Fechas ocupadas (formato YYYY-MM-DD)
+    const fechasOcupadas = [
+        "2025-08-15",
+        "2025-08-20",
+        "2025-08-25"
+    ];
+
+    const fechaInput = document.getElementById('fecha');
+
+    // Bloquear fechas pasadas y ocupadas
+    const hoy = new Date().toISOString().split('T')[0];
+    fechaInput.setAttribute('min', hoy);
+
+    fechaInput.addEventListener('input', () => {
+        if (fechasOcupadas.includes(fechaInput.value)) {
+            alert("Esta fecha no está disponible. Por favor elige otra.");
+            fechaInput.value = "";
+        }
+    });
+
+    document.getElementById('reservaForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const telefono = "549XXXXXXXXXX"; // Tu número de WhatsApp
+
+        const nombre = document.getElementById('nombre').value;
+        const fecha = document.getElementById('fecha').value;
+        const servicio = document.getElementById('servicio').value;
+
+        const mensaje = `Hola, soy ${nombre}. Quiero reservar el servicio de "${servicio}" para el día ${fecha}.`;
+        const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+
+        window.open(url, '_blank');
+    });
+</script>
+
+</body>
+</html>
