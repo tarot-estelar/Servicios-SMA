@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <!-- 1. AÑADIR ESTILOS DE FLATPICKR -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
         body {
             font-family: 'Montserrat', sans-serif;
@@ -19,7 +21,7 @@
             color: white;
             padding: 30px 15px;
             text-align: center;
-            font-size: 1.5rem;
+            font-size: 1.8rem;
         }
         main {
             max-width: 500px;
@@ -34,13 +36,16 @@
             margin-top: 15px;
             font-weight: bold;
         }
-        input, select, button {
+        /* Se aplica el estilo también al input de flatpickr */
+        input, .flatpickr-input, button {
             width: 100%;
             padding: 10px;
             margin-top: 5px;
             border: 1px solid #ccc;
             border-radius: 8px;
             font-family: 'Montserrat', sans-serif;
+            background-color: white; /* Asegura fondo blanco para el input */
+            box-sizing: border-box; /* Importante para que el padding no desborde */
         }
         .servicio {
             display: flex;
@@ -69,12 +74,6 @@
             font-size: 0.9rem;
             color: #555;
         }
-        .fecha-error {
-            color: #d9534f;
-            font-size: 0.9rem;
-            margin-top: 5px;
-            display: none;
-        }
         .total-container {
             margin-top: 25px;
             padding-top: 15px;
@@ -95,8 +94,8 @@
         <input type="text" id="nombre" required>
 
         <label for="fecha">Fecha</label>
-        <input type="date" id="fecha" required>
-        <div id="fechaError" class="fecha-error">Esta fecha no está disponible. Por favor elige otra.</div>
+        <!-- Este input será transformado por flatpickr -->
+        <input type="text" id="fecha" required placeholder="Selecciona una fecha...">
 
         <label>Selecciona los servicios</label>
         <div class="servicio">
@@ -125,31 +124,54 @@
     </form>
 </main>
 
+<!-- 2. AÑADIR SCRIPT DE FLATPICKR -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<!-- Opcional: añadir traducción a español para el calendario -->
+<script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+
 <script>
     // --- ELEMENTOS DEL DOM ---
-    const nombreInput = document.getElementById('nombre');
+    const nombreInput = document.getElementById('nombre' );
     const fechaInput = document.getElementById('fecha');
-    const fechaError = document.getElementById('fechaError');
     const form = document.getElementById('reservaForm');
     const checkboxes = document.querySelectorAll('input[name="servicio"]');
     const costoTotalSpan = document.getElementById('costoTotal');
 
     // --- DATOS ---
-    const fechasOcupadas = ["2025-08-15", "2025-08-20", "2025-08-25"];
-    const telefono = "5493525615318"; // 
+    const telefono = "549XXXXXXXXXX"; // Cambia por tu número real
 
-    // --- FUNCIONES ---
-
-    function validarFecha() {
-        if (fechasOcupadas.includes(fechaInput.value)) {
-            fechaError.style.display = 'block';
-            return false;
-        } else {
-            fechaError.style.display = 'none';
-            return true;
+    // --- 3. NUEVA CONFIGURACIÓN DE FECHAS BLOQUEADAS ---
+    const fechasBloqueadas = [
+        // Fechas individuales
+        "2025-08-15",
+        "2025-08-20",
+        "2025-08-25",
+        // Rangos de fechas (como el que pediste)
+        {
+            from: "2025-10-03",
+            to: "2025-10-21"
+        },
+        // También puedes bloquear días de la semana (0 es Domingo, 6 es Sábado)
+        function(date) {
+            // Ejemplo: bloquear todos los domingos
+            return date.getDay() === 0;
         }
-    }
+    ];
 
+    // --- INICIALIZACIÓN DE FLATPICKR ---
+    flatpickr("#fecha", {
+        // Traducir el calendario a español
+        "locale": "es",
+        // Formato en que se muestra la fecha
+        dateFormat: "Y-m-d",
+        // No permitir fechas pasadas
+        minDate: "today",
+        // La magia sucede aquí: deshabilita las fechas que definimos
+        disable: fechasBloqueadas,
+    });
+
+
+    // --- FUNCIONES (simplificadas, ya que flatpickr hace la validación) ---
     function calcularTotal() {
         let total = 0;
         checkboxes.forEach(checkbox => {
@@ -161,9 +183,6 @@
         return total;
     }
 
-    // --- NUEVO: GUARDAR Y CARGAR DATOS DEL FORMULARIO ---
-
-    // Función para guardar los datos en localStorage
     function guardarDatos() {
         const serviciosSeleccionados = Array.from(checkboxes)
             .filter(cb => cb.checked)
@@ -174,55 +193,38 @@
         localStorage.setItem('reservaServicios', JSON.stringify(serviciosSeleccionados));
     }
 
-    // Función para cargar los datos desde localStorage al iniciar
     function cargarDatos() {
         const nombreGuardado = localStorage.getItem('reservaNombre');
         const fechaGuardada = localStorage.getItem('reservaFecha');
         const serviciosGuardados = JSON.parse(localStorage.getItem('reservaServicios'));
 
-        if (nombreGuardado) {
-            nombreInput.value = nombreGuardado;
-        }
-        if (fechaGuardada) {
-            fechaInput.value = fechaGuardada;
-        }
+        if (nombreGuardado) nombreInput.value = nombreGuardado;
+        if (fechaGuardada) fechaInput.value = fechaGuardada;
         if (serviciosGuardados && serviciosGuardados.length > 0) {
             checkboxes.forEach(cb => {
-                if (serviciosGuardados.includes(cb.value)) {
-                    cb.checked = true;
-                }
+                if (serviciosGuardados.includes(cb.value)) cb.checked = true;
             });
         }
     }
     
     // --- EVENT LISTENERS ---
-
-    // Poner la fecha mínima como hoy
-    const hoy = new Date().toISOString().split('T')[0];
-    fechaInput.setAttribute('min', hoy);
-
-    // Añadir listeners para guardar datos en cada cambio
     nombreInput.addEventListener('input', guardarDatos);
-    fechaInput.addEventListener('input', () => {
-        validarFecha();
-        guardarDatos(); // También guardar al cambiar la fecha
-    });
+    fechaInput.addEventListener('change', guardarDatos); // flatpickr usa 'change'
     checkboxes.forEach(checkbox => {
         checkbox.addEventListener('change', () => {
             calcularTotal();
-            guardarDatos(); // También guardar al cambiar servicios
+            guardarDatos();
         });
     });
 
-    // Gestionar el envío del formulario
     form.addEventListener('submit', function(e) {
         e.preventDefault();
-        if (!validarFecha()) {
-            fechaInput.focus();
-            return;
-        }
         if (calcularTotal() === 0) {
             alert("Por favor selecciona al menos un servicio.");
+            return;
+        }
+        if (!fechaInput.value) {
+            alert("Por favor selecciona una fecha.");
             return;
         }
 
@@ -233,34 +235,22 @@
             .filter(cb => cb.checked)
             .map(el => el.value).join(', ');
 
-        const mensaje = `Hola👋! soy ${nombre}. Quiero reservar para el día ${fecha} los siguientes servicios: ${serviciosSeleccionados}. 
-        
-        El total es ${total}.`;
+        const mensaje = `Hola, soy ${nombre}. Quiero reservar para el día ${fecha} los siguientes servicios: ${serviciosSeleccionados}. El total es ${total}.`;
         const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje )}`;
 
         window.open(url, '_blank');
 
-        // Limpiar localStorage después de un envío exitoso
         localStorage.removeItem('reservaNombre');
         localStorage.removeItem('reservaFecha');
         localStorage.removeItem('reservaServicios');
     });
 
     // --- INICIALIZACIÓN ---
-    // Cargar datos guardados al abrir la página
     document.addEventListener('DOMContentLoaded', () => {
         cargarDatos();
-        // Validar y calcular con los datos cargados
-        validarFecha();
         calcularTotal();
     });
-
 </script>
 
 </body>
 </html>
-
-
-
-
-
