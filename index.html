@@ -231,7 +231,8 @@
             .filter(cb => cb.checked)
             .map(el => el.value).join(', ');
 
-        const mensaje = `Hola, soy ${nombre}. Quiero reservar para el día ${fecha} los siguientes servicios: ${serviciosSeleccionados}. El total es ${total}.`;
+        const mensaje = `Hola👋! soy ${nombre}. Quiero reservar para el día ${fecha} los siguientes servicios: ${serviciosSeleccionados}. 
+        El total es ${total}.`;
         const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje )}`;
 
         window.open(url, '_blank');
@@ -250,6 +251,7 @@
 
 </body>
 </html>
+
 
 
 
