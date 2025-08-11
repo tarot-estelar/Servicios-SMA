@@ -1,141 +1,96 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Servicios SMA - Reserva</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f3f8f6;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #2d8659;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-size: 1.5rem;
-        }
-        main {
-            max-width: 500px;
-            margin: 30px auto;
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        label {
-            display: block;
-            margin-top: 15px;
-            font-weight: bold;
-        }
-        input, select, button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        }
-        .servicio {
-            display: flex;
-            align-items: center;
-            margin-top: 8px;
-        }
-        .servicio input {
-            width: auto;
-            margin-right: 10px;
-        }
-        button {
-            background-color: #2d8659;
-            color: white;
-            border: none;
-            font-size: 1rem;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-        button:hover {
-            background-color: #256f48;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Servicios SMA</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        padding: 20px;
+        max-width: 500px;
+        margin: auto;
+    }
+    h2 {
+        text-align: center;
+        color: #333;
+    }
+    .service {
+        display: flex;
+        justify-content: space-between;
+        background: white;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+    }
+    label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    button {
+        width: 100%;
+        padding: 10px;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    button:hover {
+        background: #218838;
+    }
+</style>
 </head>
 <body>
 
-<header>Servicios SMA - Reserva tu día</header>
+<h2>Reserva de Servicios - SMA</h2>
 
-<main>
-    <form id="reservaForm">
-        <label for="nombre">Tu nombre</label>
-        <input type="text" id="nombre" required>
+<form id="serviciosForm">
+    <div class="service">
+        <label><input type="checkbox" name="servicio" value="Cuidado de plantas ($2000)"> Cuidado de plantas</label>
+        <span>$2000</span>
+    </div>
+    <div class="service">
+        <label><input type="checkbox" name="servicio" value="Cuidado de animales ($4000)"> Cuidado de animales</label>
+        <span>$4000</span>
+    </div>
+    <div class="service">
+        <label><input type="checkbox" name="servicio" value="Limpieza ($3000)"> Limpieza</label>
+        <span>$3000</span>
+    </div>
+    <div class="service">
+        <label><input type="checkbox" name="servicio" value="Riego de jardín ($2500)"> Riego de jardín</label>
+        <span>$2500</span>
+    </div>
 
-        <label for="fecha">Fecha</label>
-        <input type="date" id="fecha" required>
+    <label for="fecha">Selecciona la fecha:</label>
+    <input type="date" id="fecha" name="fecha" required min="2025-08-15">
 
-        <label>Selecciona los servicios</label>
-        <div class="servicio">
-            <input type="checkbox" name="servicio" value="Cuidado de plantas - $2000">
-            Cuidado de plantas - $2000
-        </div>
-        <div class="servicio">
-            <input type="checkbox" name="servicio" value="Cuidado de animales - $3500">
-            Cuidado de animales - $3500
-        </div>
-        <div class="servicio">
-            <input type="checkbox" name="servicio" value="Limpieza del hogar - $5000">
-            Limpieza del hogar - $5000
-        </div>
-        <div class="servicio">
-            <input type="checkbox" name="servicio" value="Chequeo de seguridad - $1500">
-            Chequeo de seguridad - $1500
-        </div>
-
-        <button type="submit">Reservar por WhatsApp</button>
-    </form>
-</main>
+    <button type="button" onclick="enviarWhatsApp()">Reservar por WhatsApp</button>
+</form>
 
 <script>
-    // Fechas ocupadas (formato YYYY-MM-DD)
-    const fechasOcupadas = [
-        "2025-08-15",
-        "2025-08-20",
-        "2025-08-25"
-    ];
-
-    const fechaInput = document.getElementById('fecha');
-
-    // Bloquear fechas pasadas
-    const hoy = new Date().toISOString().split('T')[0];
-    fechaInput.setAttribute('min', hoy);
-
-    fechaInput.addEventListener('input', () => {
-        if (fechasOcupadas.includes(fechaInput.value)) {
-            alert("Esta fecha no está disponible. Por favor elige otra.");
-            fechaInput.value = "";
-        }
+function enviarWhatsApp() {
+    let servicios = [];
+    document.querySelectorAll('input[name="servicio"]:checked').forEach((el) => {
+        servicios.push(el.value);
     });
 
-    document.getElementById('reservaForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const telefono = "549XXXXXXXXXX"; // Cambia por tu número real con código de país
+    let fecha = document.getElementById('fecha').value;
+    if (servicios.length === 0 || !fecha) {
+        alert("Por favor selecciona al menos un servicio y una fecha.");
+        return;
+    }
 
-        const nombre = document.getElementById('nombre').value;
-        const fecha = document.getElementById('fecha').value;
-        const serviciosSeleccionados = Array.from(
-            document.querySelectorAll('input[name="servicio"]:checked')
-        ).map(el => el.value).join(', ');
+    let mensaje = `Hola! Quiero reservar los siguientes servicios: ${servicios.join(', ')} para el día ${fecha}`;
+    let telefono = "549XXXXXXXXXX"; // Cambia por tu número de WhatsApp con código de país
+    let url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
 
-        if (!serviciosSeleccionados) {
-            alert("Por favor selecciona al menos un servicio.");
-            return;
-        }
-
-        const mensaje = `Hola, soy ${nombre}. Quiero reservar para el día ${fecha} los siguientes servicios: ${serviciosSeleccionados}.`;
-        const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
-
-        window.open(url, '_blank');
-    });
+    window.open(url, '_blank');
+}
 </script>
 
 </body>
