@@ -17,7 +17,7 @@
         header {
             background-color: #2d8659;
             color: white;
-            padding: 30px 10px;
+            padding: 30px 15px;
             text-align: center;
             font-size: 1.8rem;
         }
@@ -69,14 +69,12 @@
             font-size: 0.9rem;
             color: #555;
         }
-        /* Estilo para el mensaje de error de la fecha */
         .fecha-error {
-            color: #d9534f; /* Color rojo para el error */
+            color: #d9534f;
             font-size: 0.9rem;
             margin-top: 5px;
-            display: none; /* Oculto por defecto */
+            display: none;
         }
-        /* Estilo para el total */
         .total-container {
             margin-top: 25px;
             padding-top: 15px;
@@ -98,11 +96,9 @@
 
         <label for="fecha">Fecha</label>
         <input type="date" id="fecha" required>
-        <!-- Mensaje de error para la fecha -->
         <div id="fechaError" class="fecha-error">Esta fecha no está disponible. Por favor elige otra.</div>
 
         <label>Selecciona los servicios</label>
-        <!-- Se añade el atributo data-precio para facilitar el cálculo -->
         <div class="servicio">
             <input type="checkbox" name="servicio" value="Riego y cuidado de plantas" data-precio="5000">
             🌿 Riego y cuidado de plantas - $5000
@@ -120,7 +116,6 @@
            📦 Recepción y guardado de paquetes - $3000
         </div>
 
-        <!-- Contenedor para mostrar el total -->
         <div class="total-container">
             Total: <span id="costoTotal">$0</span>
         </div>
@@ -132,6 +127,7 @@
 
 <script>
     // --- ELEMENTOS DEL DOM ---
+    const nombreInput = document.getElementById('nombre');
     const fechaInput = document.getElementById('fecha');
     const fechaError = document.getElementById('fechaError');
     const form = document.getElementById('reservaForm');
@@ -144,23 +140,20 @@
 
     // --- FUNCIONES ---
 
-    // Función para validar la fecha seleccionada
     function validarFecha() {
         if (fechasOcupadas.includes(fechaInput.value)) {
-            fechaError.style.display = 'block'; // Muestra el error
+            fechaError.style.display = 'block';
             return false;
         } else {
-            fechaError.style.display = 'none'; // Oculta el error
+            fechaError.style.display = 'none';
             return true;
         }
     }
 
-    // Función para calcular y mostrar el costo total
     function calcularTotal() {
         let total = 0;
         checkboxes.forEach(checkbox => {
             if (checkbox.checked) {
-                // Suma el valor del atributo data-precio
                 total += parseInt(checkbox.dataset.precio, 10);
             }
         });
@@ -168,55 +161,99 @@
         return total;
     }
 
+    // --- NUEVO: GUARDAR Y CARGAR DATOS DEL FORMULARIO ---
+
+    // Función para guardar los datos en localStorage
+    function guardarDatos() {
+        const serviciosSeleccionados = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        
+        localStorage.setItem('reservaNombre', nombreInput.value);
+        localStorage.setItem('reservaFecha', fechaInput.value);
+        localStorage.setItem('reservaServicios', JSON.stringify(serviciosSeleccionados));
+    }
+
+    // Función para cargar los datos desde localStorage al iniciar
+    function cargarDatos() {
+        const nombreGuardado = localStorage.getItem('reservaNombre');
+        const fechaGuardada = localStorage.getItem('reservaFecha');
+        const serviciosGuardados = JSON.parse(localStorage.getItem('reservaServicios'));
+
+        if (nombreGuardado) {
+            nombreInput.value = nombreGuardado;
+        }
+        if (fechaGuardada) {
+            fechaInput.value = fechaGuardada;
+        }
+        if (serviciosGuardados && serviciosGuardados.length > 0) {
+            checkboxes.forEach(cb => {
+                if (serviciosGuardados.includes(cb.value)) {
+                    cb.checked = true;
+                }
+            });
+        }
+    }
+    
     // --- EVENT LISTENERS ---
 
     // Poner la fecha mínima como hoy
     const hoy = new Date().toISOString().split('T')[0];
     fechaInput.setAttribute('min', hoy);
 
-    // Validar fecha al cambiarla
-    fechaInput.addEventListener('input', validarFecha);
-
-    // Calcular total al marcar/desmarcar un servicio
+    // Añadir listeners para guardar datos en cada cambio
+    nombreInput.addEventListener('input', guardarDatos);
+    fechaInput.addEventListener('input', () => {
+        validarFecha();
+        guardarDatos(); // También guardar al cambiar la fecha
+    });
     checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', calcularTotal);
+        checkbox.addEventListener('change', () => {
+            calcularTotal();
+            guardarDatos(); // También guardar al cambiar servicios
+        });
     });
 
     // Gestionar el envío del formulario
     form.addEventListener('submit', function(e) {
         e.preventDefault();
-
-        const esFechaValida = validarFecha();
-        const total = calcularTotal();
-        
-        if (!esFechaValida) {
-            // Si la fecha no es válida, enfoca el campo para que el usuario la corrija
+        if (!validarFecha()) {
             fechaInput.focus();
             return;
         }
-
-        if (total === 0) {
+        if (calcularTotal() === 0) {
             alert("Por favor selecciona al menos un servicio.");
             return;
         }
 
-        const nombre = document.getElementById('nombre').value;
-        const fecha = document.getElementById('fecha').value;
-        const serviciosSeleccionados = Array.from(
-            document.querySelectorAll('input[name="servicio"]:checked')
-        ).map(el => el.value).join(', ');
+        const nombre = nombreInput.value;
+        const fecha = fechaInput.value;
+        const total = costoTotalSpan.textContent;
+        const serviciosSeleccionados = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(el => el.value).join(', ');
 
-        const mensaje = `Hola, soy ${nombre}. Quiero reservar para el día ${fecha} los siguientes servicios: ${serviciosSeleccionados}. El total es $${total}.`;
+        const mensaje = `Hola, soy ${nombre}. Quiero reservar para el día ${fecha} los siguientes servicios: ${serviciosSeleccionados}. El total es ${total}.`;
         const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje )}`;
 
         window.open(url, '_blank');
+
+        // Limpiar localStorage después de un envío exitoso
+        localStorage.removeItem('reservaNombre');
+        localStorage.removeItem('reservaFecha');
+        localStorage.removeItem('reservaServicios');
     });
 
-    // Inicializar el cálculo por si hay valores pre-marcados (aunque en este caso no hay)
-    calcularTotal();
+    // --- INICIALIZACIÓN ---
+    // Cargar datos guardados al abrir la página
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarDatos();
+        // Validar y calcular con los datos cargados
+        validarFecha();
+        calcularTotal();
+    });
+
 </script>
 
 </body>
 </html>
-
-
