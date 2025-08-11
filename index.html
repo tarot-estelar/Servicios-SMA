@@ -1,12 +1,21 @@
+¡Excelente idea! Esas mejoras harán que la página sea mucho más funcional y amigable para tus clientes.
+He modificado el código para incluir:
+Cálculo del costo total: Se añade un campo que muestra la suma total en tiempo real a medida que el usuario selecciona o deselecciona servicios.
+Mejora de la alerta: Reemplacé la alerta nativa del navegador por un mensaje de error más elegante y visualmente integrado en el formulario, que aparece justo debajo del campo de la fecha cuando se elige un día no disponible.
+Aquí tienes el código con las nuevas funcionalidades implementadas:
+HTML
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Servicios SMA - Reserva</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Montserrat', sans-serif;
             background-color: #f3f8f6;
             margin: 0;
             padding: 0;
@@ -14,9 +23,9 @@
         header {
             background-color: #2d8659;
             color: white;
-            padding: 15px;
+            padding: 30px 15px;
             text-align: center;
-            font-size: 1.5rem;
+            font-size: 1.8rem;
         }
         main {
             max-width: 500px;
@@ -24,7 +33,7 @@
             padding: 20px;
             background-color: white;
             border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1 );
         }
         label {
             display: block;
@@ -37,6 +46,7 @@
             margin-top: 5px;
             border: 1px solid #ccc;
             border-radius: 8px;
+            font-family: 'Montserrat', sans-serif;
         }
         .servicio {
             display: flex;
@@ -54,9 +64,32 @@
             font-size: 1rem;
             cursor: pointer;
             margin-top: 20px;
+            font-weight: bold;
         }
         button:hover {
             background-color: #256f48;
+        }
+        .nota-valores {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        /* Estilo para el mensaje de error de la fecha */
+        .fecha-error {
+            color: #d9534f; /* Color rojo para el error */
+            font-size: 0.9rem;
+            margin-top: 5px;
+            display: none; /* Oculto por defecto */
+        }
+        /* Estilo para el total */
+        .total-container {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 2px solid #eee;
+            text-align: right;
+            font-size: 1.2rem;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -71,54 +104,107 @@
 
         <label for="fecha">Fecha</label>
         <input type="date" id="fecha" required>
+        <!-- Mensaje de error para la fecha -->
+        <div id="fechaError" class="fecha-error">Esta fecha no está disponible. Por favor elige otra.</div>
 
         <label>Selecciona los servicios</label>
+        <!-- Se añade el atributo data-precio para facilitar el cálculo -->
         <div class="servicio">
-            <input type="checkbox" name="servicio" value="Cuidado de plantas - $2000">
+            <input type="checkbox" name="servicio" value="Riego y cuidado de plantas" data-precio="5000">
             🌿 Riego y cuidado de plantas - $5000
         </div>
         <div class="servicio">
-            <input type="checkbox" name="servicio" value="Cuidado de animales - $3500">
+            <input type="checkbox" name="servicio" value="Paseo y alimentación de mascotas" data-precio="5000">
             🐕 Paseo y alimentación de mascotas - $5000
         </div>
         <div class="servicio">
-            <input type="checkbox" name="servicio" value="Limpieza del hogar - $5000">
-           🧹Limpieza y mantenimiento básico del hogar- $20000
+            <input type="checkbox" name="servicio" value="Limpieza y mantenimiento básico del hogar" data-precio="20000">
+           🧹 Limpieza y mantenimiento básico del hogar - $20000
         </div>
         <div class="servicio">
-            <input type="checkbox" name="servicio" value="Chequeo de seguridad - $1500">
-           📦 Recepción y guardado de paquetes: - $3000
+            <input type="checkbox" name="servicio" value="Recepción y guardado de paquetes" data-precio="3000">
+           📦 Recepción y guardado de paquetes - $3000
+        </div>
+
+        <!-- Contenedor para mostrar el total -->
+        <div class="total-container">
+            Total: <span id="costoTotal">$0</span>
         </div>
 
         <button type="submit">Reservar por WhatsApp</button>
+        <p class="nota-valores">* valores por visita</p>
     </form>
 </main>
 
 <script>
-    // Fechas ocupadas (formato YYYY-MM-DD)
-    const fechasOcupadas = [
-        "2025-08-15",
-        "2025-08-20",
-        "2025-08-25"
-    ];
-
+    // --- ELEMENTOS DEL DOM ---
     const fechaInput = document.getElementById('fecha');
+    const fechaError = document.getElementById('fechaError');
+    const form = document.getElementById('reservaForm');
+    const checkboxes = document.querySelectorAll('input[name="servicio"]');
+    const costoTotalSpan = document.getElementById('costoTotal');
 
-    // Bloquear fechas pasadas
+    // --- DATOS ---
+    const fechasOcupadas = ["2025-08-15", "2025-08-20", "2025-08-25"];
+    const telefono = "549XXXXXXXXXX"; // Cambia por tu número real
+
+    // --- FUNCIONES ---
+
+    // Función para validar la fecha seleccionada
+    function validarFecha() {
+        if (fechasOcupadas.includes(fechaInput.value)) {
+            fechaError.style.display = 'block'; // Muestra el error
+            return false;
+        } else {
+            fechaError.style.display = 'none'; // Oculta el error
+            return true;
+        }
+    }
+
+    // Función para calcular y mostrar el costo total
+    function calcularTotal() {
+        let total = 0;
+        checkboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                // Suma el valor del atributo data-precio
+                total += parseInt(checkbox.dataset.precio, 10);
+            }
+        });
+        costoTotalSpan.textContent = `$${total}`;
+        return total;
+    }
+
+    // --- EVENT LISTENERS ---
+
+    // Poner la fecha mínima como hoy
     const hoy = new Date().toISOString().split('T')[0];
     fechaInput.setAttribute('min', hoy);
 
-    fechaInput.addEventListener('input', () => {
-        if (fechasOcupadas.includes(fechaInput.value)) {
-            alert("Esta fecha no está disponible. Por favor elige otra.");
-            fechaInput.value = "";
-        }
+    // Validar fecha al cambiarla
+    fechaInput.addEventListener('input', validarFecha);
+
+    // Calcular total al marcar/desmarcar un servicio
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', calcularTotal);
     });
 
-    document.getElementById('reservaForm').addEventListener('submit', function(e) {
+    // Gestionar el envío del formulario
+    form.addEventListener('submit', function(e) {
         e.preventDefault();
+
+        const esFechaValida = validarFecha();
+        const total = calcularTotal();
         
-        const telefono = "549XXXXXXXXXX"; // Cambia por tu número real con código de país
+        if (!esFechaValida) {
+            // Si la fecha no es válida, enfoca el campo para que el usuario la corrija
+            fechaInput.focus();
+            return;
+        }
+
+        if (total === 0) {
+            alert("Por favor selecciona al menos un servicio.");
+            return;
+        }
 
         const nombre = document.getElementById('nombre').value;
         const fecha = document.getElementById('fecha').value;
@@ -126,18 +212,22 @@
             document.querySelectorAll('input[name="servicio"]:checked')
         ).map(el => el.value).join(', ');
 
-        if (!serviciosSeleccionados) {
-            alert("Por favor selecciona al menos un servicio.");
-            return;
-        }
-
-        const mensaje = `Hola, soy ${nombre}. Quiero reservar para el día ${fecha} los siguientes servicios: ${serviciosSeleccionados}.`;
-        const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+        const mensaje = `Hola, soy ${nombre}. Quiero reservar para el día ${fecha} los siguientes servicios: ${serviciosSeleccionados}. El total es $${total}.`;
+        const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje )}`;
 
         window.open(url, '_blank');
     });
+
+    // Inicializar el cálculo por si hay valores pre-marcados (aunque en este caso no hay)
+    calcularTotal();
 </script>
 
 </body>
 </html>
+¡Listo! Ahora tu formulario es más interactivo y claro para el usuario.
+¿Te gustaría añadir alguna otra mejora? Podríamos, por ejemplo:
+Guardar los datos del formulario (nombre, servicios) si el usuario recarga la página por accidente.
+Añadir una pequeña animación al botón o a los elementos al seleccionarlos.
+Configurar el formulario para que también pueda enviarse por correo electrónico como alternativa a WhatsApp.
+Iniciar agent
 
