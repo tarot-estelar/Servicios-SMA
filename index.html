@@ -82,16 +82,16 @@
             font-size: 1.2rem;
             font-weight: bold;
         }
-        .direccion-container {
+        .direccion-container, .franja-horaria-container {
             display: flex;
             align-items: center;
             margin-top: 5px;
         }
-        .direccion-container input {
+        .direccion-container input, .franja-horaria-container input {
             flex-grow: 1;
             margin-right: 10px;
         }
-        .direccion-fija {
+        .direccion-fija, .opcional-text {
             white-space: nowrap;
             font-size: 0.9em;
             color: #555;
@@ -111,11 +111,18 @@
         <!-- Este input será transformado por flatpickr -->
         <input type="text" id="fecha" required placeholder="Selecciona una fecha...">
 
-        <!-- NUEVO CAMPO DE DIRECCIÓN -->
+        <!-- CAMPO DE DIRECCIÓN -->
         <label for="direccion">Dirección</label>
         <div class="direccion-container">
             <input type="text" id="direccion" required>
             <span class="direccion-fija">San Martín de los Andes, Neuquén</span>
+        </div>
+
+        <!-- NUEVO CAMPO DE FRANJA HORARIA -->
+        <label for="franjaHoraria">Franja horaria</label>
+        <div class="franja-horaria-container">
+            <input type="text" id="franjaHoraria" placeholder="Ej: 9:00 - 12:00">
+            <span class="opcional-text">opcional</span>
         </div>
 
         <label>Selecciona los servicios</label>
@@ -129,7 +136,7 @@
         </div>
         <div class="servicio">
             <input type="checkbox" name="servicio" value="Limpieza y mantenimiento básico del hogar" data-precio="20000">
-           🧹 Limpieza básica del hogar - $20000
+           🧹 Limpieza y mantenimiento básico del hogar - $20000
         </div>
         <div class="servicio">
             <input type="checkbox" name="servicio" value="Recepción y guardado de paquetes" data-precio="3000">
@@ -152,28 +159,26 @@
 
 <script>
     // --- ELEMENTOS DEL DOM ---
-    const nombreInput = document.getElementById("nombre" );
-    const fechaInput = document.getElementById("fecha");
-    const direccionInput = document.getElementById("direccion"); // NUEVO
-    const form = document.getElementById("reservaForm");
-    const checkboxes = document.querySelectorAll("input[name='servicio']");
-    const costoTotalSpan = document.getElementById("costoTotal");
+    const nombreInput = document.getElementById('nombre' );
+    const fechaInput = document.getElementById('fecha');
+    const direccionInput = document.getElementById('direccion');
+    const franjaHorariaInput = document.getElementById('franjaHoraria'); // NUEVO
+    const form = document.getElementById('reservaForm');
+    const checkboxes = document.querySelectorAll('input[name="servicio"]');
+    const costoTotalSpan = document.getElementById('costoTotal');
 
     // --- DATOS ---
     const telefono = "5493525615318"; // Cambia por tu número real
 
-    // --- 3. NUEVA CONFIGURACIÓN DE FECHAS BLOQUEADAS ---
+    // --- 3. CONFIGURACIÓN DE FECHAS BLOQUEADAS ---
     const fechasBloqueadas = [
-        // Fechas individuales
         "2025-08-15",
         "2025-08-20",
         "2025-08-25",
-        // Rangos de fechas
         {
             from: "2025-10-03",
             to: "2025-10-21"
         }
-        // Ya no está la función que bloqueaba los domingos
     ]; 
 
     // --- INICIALIZACIÓN DE FLATPICKR ---
@@ -203,21 +208,24 @@
             .filter(cb => cb.checked)
             .map(cb => cb.value);
         
-        localStorage.setItem("reservaNombre", nombreInput.value);
-        localStorage.setItem("reservaFecha", fechaInput.value);
-        localStorage.setItem("reservaDireccion", direccionInput.value); // NUEVO
-        localStorage.setItem("reservaServicios", JSON.stringify(serviciosSeleccionados));
+        localStorage.setItem('reservaNombre', nombreInput.value);
+        localStorage.setItem('reservaFecha', fechaInput.value);
+        localStorage.setItem('reservaDireccion', direccionInput.value);
+        localStorage.setItem('reservaFranjaHoraria', franjaHorariaInput.value); // NUEVO
+        localStorage.setItem('reservaServicios', JSON.stringify(serviciosSeleccionados));
     }
 
     function cargarDatos() {
-        const nombreGuardado = localStorage.getItem("reservaNombre");
-        const fechaGuardada = localStorage.getItem("reservaFecha");
-        const direccionGuardada = localStorage.getItem("reservaDireccion"); // NUEVO
-        const serviciosGuardados = JSON.parse(localStorage.getItem("reservaServicios"));
+        const nombreGuardado = localStorage.getItem('reservaNombre');
+        const fechaGuardada = localStorage.getItem('reservaFecha');
+        const direccionGuardada = localStorage.getItem('reservaDireccion');
+        const franjaHorariaGuardada = localStorage.getItem('reservaFranjaHoraria'); // NUEVO
+        const serviciosGuardados = JSON.parse(localStorage.getItem('reservaServicios'));
 
         if (nombreGuardado) nombreInput.value = nombreGuardado;
         if (fechaGuardada) fechaInput.value = fechaGuardada;
-        if (direccionGuardada) direccionInput.value = direccionGuardada; // NUEVO
+        if (direccionGuardada) direccionInput.value = direccionGuardada;
+        if (franjaHorariaGuardada) franjaHorariaInput.value = franjaHorariaGuardada; // NUEVO
         if (serviciosGuardados && serviciosGuardados.length > 0) {
             checkboxes.forEach(cb => {
                 if (serviciosGuardados.includes(cb.value)) cb.checked = true;
@@ -226,17 +234,18 @@
     }
     
     // --- EVENT LISTENERS ---
-    nombreInput.addEventListener("input", guardarDatos);
-    fechaInput.addEventListener("change", guardarDatos); // flatpickr usa 'change'
-    direccionInput.addEventListener("input", guardarDatos); // NUEVO
+    nombreInput.addEventListener('input', guardarDatos);
+    fechaInput.addEventListener('change', guardarDatos); // flatpickr usa 'change'
+    direccionInput.addEventListener('input', guardarDatos);
+    franjaHorariaInput.addEventListener('input', guardarDatos); // NUEVO
     checkboxes.forEach(checkbox => {
-        checkbox.addEventListener("change", () => {
+        checkbox.addEventListener('change', () => {
             calcularTotal();
             guardarDatos();
         });
     });
 
-    form.addEventListener("submit", function(e) {
+    form.addEventListener('submit', function(e) {
         e.preventDefault();
         if (calcularTotal() === 0) {
             alert("Por favor selecciona al menos un servicio.");
@@ -246,32 +255,39 @@
             alert("Por favor selecciona una fecha.");
             return;
         }
-        if (!direccionInput.value) { // NUEVO
+        if (!direccionInput.value) {
             alert("Por favor ingresa tu dirección.");
             return;
         }
 
         const nombre = nombreInput.value;
         const fecha = fechaInput.value;
-        const direccion = `${direccionInput.value}, San Martín de los Andes, Neuquén`; // MENSAJE ACTUALIZADO
+        const direccion = `${direccionInput.value}, San Martín de los Andes, Neuquén`;
+        const franjaHoraria = franjaHorariaInput.value; // NUEVO
         const total = costoTotalSpan.textContent;
         const serviciosSeleccionados = Array.from(checkboxes)
             .filter(cb => cb.checked)
-            .map(el => el.value).join(", ");
+            .map(el => el.value).join(', ');
 
-        const mensaje = `Hola👋! soy ${nombre}. Quiero reservar para el día ${fecha} en la dirección ${direccion} los siguientes servicios: ${serviciosSeleccionados}. El total es ${total}.`; // MENSAJE ACTUALIZADO
+        let mensaje = `Hola👋! soy ${nombre}. Quiero reservar para el día ${fecha} en la dirección ${direccion} los siguientes servicios: ${serviciosSeleccionados}.`;
+        if (franjaHoraria) { // Solo añade la franja horaria si el campo no está vacío
+            mensaje += ` En la franja horaria: ${franjaHoraria}.`;
+        }
+        mensaje += ` El total es ${total}.`;
+
         const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje )}`;
 
-        window.open(url, "_blank");
+        window.open(url, '_blank');
 
-        localStorage.removeItem("reservaNombre");
-        localStorage.removeItem("reservaFecha");
-        localStorage.removeItem("reservaDireccion"); // NUEVO
-        localStorage.removeItem("reservaServicios");
+        localStorage.removeItem('reservaNombre');
+        localStorage.removeItem('reservaFecha');
+        localStorage.removeItem('reservaDireccion');
+        localStorage.removeItem('reservaFranjaHoraria'); // NUEVO
+        localStorage.removeItem('reservaServicios');
     });
 
     // --- INICIALIZACIÓN ---
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener('DOMContentLoaded', () => {
         cargarDatos();
         calcularTotal();
     });
@@ -279,4 +295,3 @@
 
 </body>
 </html>
-
